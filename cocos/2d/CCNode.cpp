@@ -804,18 +804,34 @@ Node* Node::getChildByTag(int tag) const
 
 Node* Node::getChildByName(const std::string& name) const
 {
-    CCASSERT(!name.empty(), "Invalid name");
-    
-    std::hash<std::string> h;
-    size_t hash = h(name);
-    
-    for (const auto& child : _children)
-    {
-        // Different strings may have the same hash code, but can use it to compare first for speed
-        if(child->_hashOfName == hash && child->_name == name)
-            return child;
+  std::string str = name;
+  auto pos = str.find("/");
+  if( pos == 0 ){
+    str = str.substr(1,std::string::npos);
+    pos = str.find("/");
+  }
+  std::string a = str.substr(0,pos);
+  std::string b;
+  if( pos != std::string::npos ){
+    b = str.substr(pos,std::string::npos);
+  }
+  
+  std::hash<std::string> h;
+  size_t hash = h(a);
+  
+  for (const auto& child : _children)
+  {
+    // Different strings may have the same hash code, but can use it to compare first for speed
+    if(child->_hashOfName == hash && child->_name.compare(a) == 0){
+      if( b.empty() || b == "/" ){
+        return child;
+      }
+      else{
+        return child->getChildByName(b);
+      }
     }
-    return nullptr;
+  }
+  return nullptr;
 }
 
 void Node::enumerateChildren(const std::string &name, const std::function<bool (Node *)>& callback) const
